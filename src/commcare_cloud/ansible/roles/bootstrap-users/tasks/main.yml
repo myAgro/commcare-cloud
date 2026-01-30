@@ -149,6 +149,11 @@
   loop: "{{ users_pw_valid.results }}"
   when: item.stdout is defined and item.stdout != ''
 
+# Collect passwd entries (required for Ansible 2.9)
+- name: Collect passwd entries
+  getent:
+    database: passwd
+    
 # Ensure ubuntu user has passwordless sudo (for AWS AMIs)
 # This is needed so that cloud-init can run commands with sudo
 - name: Ensure ubuntu has passwordless sudo (AWS default)
@@ -160,7 +165,7 @@
     mode: 0440
   when:
     - ansible_distribution == "Ubuntu"
-    - "'ubuntu' in ansible_facts['passwd']"
+    - "'ubuntu' in ansible_facts.getent_passwd"
 
 # Ensure ubuntu user has no password (AWS default)
 # This is needed so that cloud-init can run commands with sudo
@@ -169,7 +174,7 @@
   changed_when: false
   when:
     - ansible_distribution == "Ubuntu"
-    - "'ubuntu' in ansible_facts['passwd']"
+    - "'ubuntu' in ansible_facts.getent_passwd"
 
 # This must be the last task in the file
 # It disables factory auth (e.g. root user with password login)

@@ -1,7 +1,7 @@
 internal_domain_name: null
 
 rabbitmq_create_cluster: true
-internal_network_interface: eth1
+internal_network_interface: ens5
 
 http_proxy_address: '192.168.33.14'
 http_proxy_port: '3128'
@@ -93,10 +93,12 @@ localsettings:
 
 root_email: /dev/null
 
-commcare_cloud_remote_user: vagrant
+commcare_cloud_remote_user: ubuntu
 commcare_cloud_root_user: ubuntu
 commcare_cloud_strict_host_key_checking: no
 commcare_cloud_use_vault: no
+commcare_cloud_pem: dummy
+
 
 # add datadisk device for shared directory; applicable for non-monolithic deployments
 datadisk_device: "/dev/xvdbb"
