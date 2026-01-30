@@ -1,6 +1,8 @@
 - name: Migrate DB
-  hosts: "{{ groups.webworkers.0 }}"
+  hosts: webworkers
   become: true
+  run_once: true
+
   tasks:
     - name: Migrate DB
       become: yes
@@ -12,6 +14,7 @@
       environment:
         CCHQ_IS_FRESH_INSTALL: 1
       when: CCHQ_IS_FRESH_INSTALL is defined and CCHQ_IS_FRESH_INSTALL
+
     - name: Configure Pl/Proxy cluster
       become: yes
       become_user: "{{ cchq_user }}"
@@ -20,3 +23,4 @@
         app_path: "{{ code_home }}"
         virtualenv: "{{ virtualenv_home }}"
       when: CCHQ_IS_FRESH_INSTALL is defined and CCHQ_IS_FRESH_INSTALL and SEPARATE_FORM_PROCESSING_DBS
+

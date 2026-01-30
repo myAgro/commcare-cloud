@@ -149,6 +149,27 @@
   loop: "{{ users_pw_valid.results }}"
   when: item.stdout is defined and item.stdout != ''
 
+# Ensure ubuntu user has passwordless sudo (for AWS AMIs)
+# This is needed so that cloud-init can run commands with sudo
+- name: Ensure ubuntu has passwordless sudo (AWS default)
+  copy:
+    dest: /etc/sudoers.d/ubuntu
+    content: "ubuntu ALL=(ALL) NOPASSWD:ALL\n"
+    owner: root
+    group: root
+    mode: 0440
+  when:
+    - ansible_distribution == "Ubuntu"
+    - "'ubuntu' in ansible_facts['passwd']"
+
+# Ensure ubuntu user has no password (AWS default)
+# This is needed so that cloud-init can run commands with sudo
+- name: Ensure ubuntu has no password
+  command: passwd -d ubuntu
+  changed_when: false
+  when:
+    - ansible_distribution == "Ubuntu"
+    - "'ubuntu' in ansible_facts['passwd']"
 
 # This must be the last task in the file
 # It disables factory auth (e.g. root user with password login)

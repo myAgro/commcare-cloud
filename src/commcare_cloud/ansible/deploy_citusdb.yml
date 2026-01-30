@@ -35,10 +35,10 @@
   hosts:
     - citusdb
   vars:
-    - userFrom: postgres
-    - hostTo: "{{ hot_standby_server }}"
-    - userTo: postgres
-    - state: 'present'
+    userFrom: postgres
+    hostTo: "{{ hot_standby_server }}"
+    userTo: postgres
+    state: 'present'
   tasks:
     - import_tasks: roles/setup_auth_keys.yml
       when: hot_standby_server is defined and hot_standby_server
@@ -49,7 +49,7 @@
   hosts: citusdb_worker
   become: true
   vars:
-    - postgresql_port: "{{ citus_postgresql_port }}"
+    postgresql_port: "{{ citus_postgresql_port }}"
   vars_files:
     - roles/citusdb/defaults/main.yml
     - roles/citusdb/vars/pgbouncer_workers.yml

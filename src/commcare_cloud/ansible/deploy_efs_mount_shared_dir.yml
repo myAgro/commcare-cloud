@@ -19,7 +19,7 @@
     - nfs
 
 - name: Create purging cron jobs
-  hosts: "{{ groups.proxy.0 }}"
+  hosts: proxy[0]
   become: yes
   vars:
       shared_mount_dir: "/mnt/{{ efs_shared_mount_dir }}"

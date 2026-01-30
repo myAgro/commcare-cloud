@@ -35,3 +35,6 @@ couchdb@*_files
 
 /quick_monolith_install/install-config.yml
 /docs/build
+
+/notes
+/venv
