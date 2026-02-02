@@ -81,7 +81,7 @@
 - name: Ensure PostgreSQL is started
   become: true
   service:
-    name: "postgresql@14-main"
+    name: "postgresql@{{ postgresql_version }}-{{ postgresql_cluster_name }}"
     state: started
 
 - name: Wait for PostgreSQL socket

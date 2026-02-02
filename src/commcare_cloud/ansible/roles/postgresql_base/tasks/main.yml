@@ -73,16 +73,16 @@
     state: directory
     mode: 0700
 
-- name: Check if PostgreSQL database is initialized.
-  stat:
-    path: "{{ postgresql_data_dir }}/PG_VERSION"
-  register: pgdata_dir_version
+# - name: Check if PostgreSQL database is initialized.
+#   stat:
+#     path: "{{ postgresql_data_dir }}/PG_VERSION"
+#   register: pgdata_dir_version
 
-- name: Ensure PostgreSQL database is initialized.
-  command: "{{ postgresql_bin_path }}/initdb -D {{ postgresql_data_dir }}"
-  when: not pgdata_dir_version.stat.exists
-  become: true
-  become_user: postgres
+# - name: Ensure PostgreSQL database is initialized.
+#   command: "{{ postgresql_bin_path }}/initdb -D {{ postgresql_data_dir }}"
+#   when: not pgdata_dir_version.stat.exists
+#   become: true
+#   become_user: postgres
 
 - name: assert hot standby config correct
   assert: { that: "hot_standby_server is not defined or hot_standby_server in groups.pg_standby"}
@@ -129,6 +129,18 @@
   notify: Reload postgres
 
 - meta: flush_handlers
+
+- name: Ensure PostgreSQL is started
+  become: yes
+  service:
+    name: "postgresql@{{ postgresql_version }}-{{ postgresql_cluster_name }}"
+    state: started
+
+- name: Wait for PostgreSQL socket
+  become: yes
+  wait_for:
+    path: "/var/run/postgresql/.s.PGSQL.{{ postgresql_port }}"
+    timeout: 30
 
 - name: Set up PostgreSQL DBs
   import_tasks: set_up_dbs.yml
