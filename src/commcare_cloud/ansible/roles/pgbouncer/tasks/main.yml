@@ -3,7 +3,6 @@
 - name: pgbouncer install
   apt:
     name: pgbouncer
-    update_cache: yes
     state: latest
 
 - name: pgbouncer gather package facts

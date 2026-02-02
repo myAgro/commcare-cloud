@@ -28,5 +28,4 @@
     name:
       - htop
     state: present
-    update_cache: yes
-  failed_when: false
+    lock_timeout: 300

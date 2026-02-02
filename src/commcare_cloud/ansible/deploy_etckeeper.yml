@@ -10,7 +10,6 @@
       apt:
         name: etckeeper
         state: latest
-        update_cache: yes
 
     - name: Config git user email (global)
       git_config:

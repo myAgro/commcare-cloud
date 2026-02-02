@@ -35,12 +35,6 @@
         filename: erlang-solutions
       register: erlang_repo_added
 
-    - name: Update apt cache after adding repository
-      apt:
-        update_cache: yes
-      when: erlang_repo_added is changed
-      check_mode: false
-
     - name: Install esl-erlang package
       apt:
         name: esl-erlang
