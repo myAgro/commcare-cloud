@@ -1,27 +1,17 @@
 ---
 # roles/postgresql/tasks/main.yml
 
-- name: Add PosgreSQL apt repo
+- name: Download and dearmor PostgreSQL apt key
+  become: yes
+  shell: |
+    curl -fsSL {{ postgresql_apt_key_url }} | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+  args:
+    creates: /usr/share/keyrings/postgresql.gpg
+
+- name: Add PostgreSQL apt repo
   become: true
-  apt_repository: repo='{{ postgresql_apt_repo }}' state=present
-  notify: apt update
-
-- name: Download PostgreSQL apt key
-  become: yes
-  get_url:
-    url: "{{ postgresql_apt_key_url }}"
-    dest: /usr/share/keyrings/postgresql.gpg
-    mode: '0644'
-  environment:
-    http_proxy: ""
-    https_proxy: ""
-    HTTP_PROXY: ""
-    HTTPS_PROXY: ""
-
-- name: Add PostgreSQL apt key
-  become: yes
-  apt_key:
-    file: /usr/share/keyrings/postgresql.gpg
+  apt_repository:
+    repo: "{{ postgresql_apt_repo }}"
     state: present
   notify: apt update
 
