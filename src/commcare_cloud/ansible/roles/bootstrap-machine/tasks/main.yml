@@ -28,4 +28,4 @@
     name:
       - htop
     state: present
-    lock_timeout: 300
+
