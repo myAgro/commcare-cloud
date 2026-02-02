@@ -12,11 +12,10 @@
         state: latest
         update_cache: yes
 
-    - name: Config git for /etc
+    - name: Config git user email (global)
       git_config:
         name: user.email
-        repo: /etc
-        scope: local
+        scope: global
         value: 'root@{{ ansible_fqdn }}'
 
     - name: Initial VCS

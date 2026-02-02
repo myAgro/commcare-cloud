@@ -13,11 +13,14 @@ secrets:
     devreadonly:
       username: "devreadonly"
       password: devreadonly
+      create: true
       role_attr_flags: 'NOSUPERUSER,NOCREATEROLE,NOCREATEDB'
       privs:
-        -
-          privs: SELECT
+        - privs: SELECT
           objs: ALL_IN_SCHEMA
+        - type: default_privs
+          privs: SELECT
+          objs: tables
     replication:
         username: 'hqrepl'
         password: 'hqrepl'

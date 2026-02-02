@@ -1,6 +1,21 @@
 ---
 # roles/postgresql/tasks/main.yml
 
+- name: Ensure /run/postgresql exists with correct permissions
+  become: yes
+  file:
+    path: /run/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '2775'
+
+- name: Ensure systemd tmpfiles are applied (postgres runtime dirs)
+  become: yes
+  command: systemd-tmpfiles --create
+  changed_when: false
+  failed_when: false
+
 - name: check if pghashlib installed
   stat:
     path: "{{postgres_install_dir}}/lib/hashlib.so"
@@ -60,3 +75,64 @@
     state: present
     sysctl_file: /etc/sysctl.d/90-commcare-cloud.conf
   when: dirty_background_bytes is defined
+
+- meta: flush_handlers
+
+- name: Ensure PostgreSQL is started
+  become: true
+  service:
+    name: postgresql@14-main
+    state: started
+
+- name: Wait for PostgreSQL socket
+  become: true
+  wait_for:
+    path: "/var/run/postgresql/.s.PGSQL.{{ postgresql_port }}"
+    timeout: 30
+
+- name: Create PostgreSQL users
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    login_unix_socket: /var/run/postgresql
+    name: "{{ item.value.username | default(item.key) }}"
+    password: "{{ item.value.password }}"
+    role_attr_flags: "{{ item.value.role_attr_flags | default(omit) }}"
+  loop: "{{ POSTGRES_USERS | dict2items }}"
+  when:
+    - item.value.create | default(false)
+    - not is_pg_standby
+
+- name: Grant SELECT on all tables in schema
+  become: yes
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    role: "{{ item.0.value.username | default(item.0.key) }}"
+    privs: "{{ item.1.privs }}"
+    objs: "{{ item.1.objs }}"
+    type: table
+    schema: "{{ item.1.schema | default('public') }}"
+  loop: "{{ (POSTGRES_USERS | dict2items) | subelements('value.privs', skip_missing=True) }}"
+  when:
+    - item.0.value.create | default(false)
+    - not is_pg_standby
+  tags:
+    - configure
+    - postgres-users
+
+- name: Default privileges for future tables
+  become: yes
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    role: "{{ item.0.value.username | default(item.0.key) }}"
+    type: default_privs
+    privs: "{{ item.1.privs }}"
+    objs: "{{ item.1.objs }}"
+    schema: "{{ item.1.schema | default('public') }}"
+  loop: "{{ (POSTGRES_USERS | dict2items) | subelements('value.default_privs', skip_missing=True) }}"
+  when:
+    - item.0.value.create | default(false)
+    - not is_pg_standby
+  tags:
+    - configure
+    - postgres-users

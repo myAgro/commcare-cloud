@@ -1,6 +1,32 @@
 ---
+- name: Wait for cloud-init to finish
+  become: true
+  command: cloud-init status --wait
+  changed_when: false
+  failed_when: false
+
+- name: Wait for apt lock to be released
+  become: true
+  shell: |
+    while fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+      sleep 5
+    done
+  changed_when: false
+
+- name: Disable unattended upgrades
+  become: true
+  service:
+    name: unattended-upgrades
+    state: stopped
+    enabled: false
+
 - name: Install packages we would want on any machine ever
+  become: true
   apt:
     name:
       - htop
     state: present
+    update_cache: yes
+  failed_when: false

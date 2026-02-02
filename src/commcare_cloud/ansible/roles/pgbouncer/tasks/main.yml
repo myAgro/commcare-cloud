@@ -131,7 +131,7 @@
     group: root
     owner: root
     mode: 0640
-  notify: reload monit
+  notify: restart monit
   tags: monit
 
 - name: pgbounger stop and disable (classic) and make sure multiprocess is started
@@ -143,16 +143,7 @@
   tags:
     - configure
 
-- meta: flush_handlers
-
-- name: pgbouncer monit monitor
-  monit:
-    name: pgbouncer
-    state: monitored
-  ignore_errors: "{{ ansible_check_mode }}"
-  register: result
-  until: not result.failed or 'process not presently configured with monit' not in result.msg
-  retries: 5
-  delay: 20
-  tags: monit
-
+- name: Enable pgbouncer monitoring
+  become: yes
+  command: monit monitor pgbouncer
+  changed_when: false

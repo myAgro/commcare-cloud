@@ -55,13 +55,19 @@
     - {'user': 'ansible', 'home': '/home/ansible' }
     - {'user': 'root', 'home': '/root' }
 
+- name: Check if npm is installed
+  command: which npm
+  register: npm_check
+  changed_when: false
+  failed_when: false
+
 - name: NPM proxy
   command: 'npm config set {{item.var}} {{item.protocol}}://{{http_proxy_address}}:{{http_proxy_port}}/'
   become: yes
   become_user: "{{item.user}}"
   vars:
     ansible_ssh_pipelining: true
-  ignore_errors: True
+  when: npm_check.rc == 0
   with_items:
     - {'user': 'ansible', 'var': 'proxy', 'protocol': 'http'}
     - {'user': 'ansible', 'var': 'http-proxy', 'protocol': 'http'}

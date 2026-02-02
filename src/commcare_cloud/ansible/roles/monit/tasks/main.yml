@@ -1,21 +1,39 @@
 - name: install monit
-  apt: name=monit state=present
   become: yes
+  apt:
+    name: monit
+    state: present
 
-- name: monit config
+- name: Ensure monit conf.d directory exists
+  file:
+    path: /etc/monit/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: install monit main config
   become: yes
   template:
-    src: "monitrc.j2"
-    dest: "/etc/monit/monitrc"
-    group: root
+    src: monitrc.j2
+    dest: /etc/monit/monitrc
     owner: root
-    mode: 0600
+    group: root
+    mode: '0600'
+  notify: restart monit
   tags: monit
-  notify: reload monit
 
-- name: start monit
+- name: validate monit config
   become: yes
-  service: name="monit" state=started enabled=no
+  command: monit -t
+  changed_when: false
+
+- name: start and enable monit
+  become: yes
+  service:
+    name: monit
+    state: started
+    enabled: yes
   tags:
     - monit
     - after-reboot
