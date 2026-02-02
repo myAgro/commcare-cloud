@@ -1,4 +1,5 @@
 ---
 dependencies:
+  - role: common
   - role: monit
   - role: postgresql_base

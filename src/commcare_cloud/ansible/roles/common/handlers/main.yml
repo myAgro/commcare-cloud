@@ -13,5 +13,3 @@
     apt-get update
   args:
     executable: /bin/bash
-  changed_when: false
-
