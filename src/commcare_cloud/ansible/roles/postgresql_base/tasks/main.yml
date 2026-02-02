@@ -6,9 +6,23 @@
   apt_repository: repo='{{ postgresql_apt_repo }}' state=present
   notify: apt update
 
-- name: Add PosgreSQL apt key
-  become: true
-  apt_key: url={{ postgresql_apt_key_url }} state=present
+- name: Download PostgreSQL apt key
+  become: yes
+  get_url:
+    url: "{{ postgresql_apt_key_url }}"
+    dest: /usr/share/keyrings/postgresql.gpg
+    mode: '0644'
+  environment:
+    http_proxy: ""
+    https_proxy: ""
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
+
+- name: Add PostgreSQL apt key
+  become: yes
+  apt_key:
+    file: /usr/share/keyrings/postgresql.gpg
+    state: present
   notify: apt update
 
 - name: generate en_US.UTF-8 locale
