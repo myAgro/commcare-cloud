@@ -4,6 +4,11 @@
   become: yes
   apt_key: url=https://www.postgresql.org/media/keys/ACCC4CF8.asc state=present
   notify: apt update
+  environment:
+    http_proxy: ""
+    https_proxy: ""
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
 
 - name: Add PostgreSQL apt repository
   apt_repository: repo='deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_lsb.codename }}-pgdg main' state=present

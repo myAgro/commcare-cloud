@@ -4,6 +4,14 @@
 
 - name: apt update
   become: yes
-  apt:
-    update_cache: yes
-    cache_valid_time: 7200
+  shell: |
+    while fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+      sleep 5
+    done
+    apt-get update
+  args:
+    executable: /bin/bash
+  changed_when: false
+
