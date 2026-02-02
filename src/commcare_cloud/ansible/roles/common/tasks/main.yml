@@ -98,6 +98,16 @@
     - after-reboot
   when: not inventory_hostname|ipaddr
 
+- name: "Add host file (inventory hostname)"
+  become: yes
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^{{ hostvars[inventory_hostname].ansible_host }}\s'
+    line: "{{ hostvars[inventory_hostname].ansible_host }} {{ inventory_hostname }}"
+    state: present
+  when:
+    - hostvars[inventory_hostname].ansible_host is defined
+
 - name: "Remove lines from hosts file"
   lineinfile: dest=/etc/hosts regexp='.*{{ item }}$' line="{{item}}" state=absent
   with_items: "{{ etc_hosts_lines_removed }}"

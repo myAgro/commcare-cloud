@@ -2,15 +2,14 @@
 # roles/postgresql/tasks/main.yml
 
 - name: Add PosgreSQL apt repo
+  become: true
   apt_repository: repo='{{ postgresql_apt_repo }}' state=present
-  register: add_postgresql_repo
+  notify: apt update
 
 - name: Add PosgreSQL apt key
+  become: true
   apt_key: url={{ postgresql_apt_key_url }} state=present
-
-- name: Update package list
-  apt: update_cache=yes
-  when: add_postgresql_repo is changed
+  notify: apt update
 
 - name: generate en_US.UTF-8 locale
   locale_gen: name='en_US.UTF-8' state=present
