@@ -33,55 +33,105 @@
     state: started
   when: not db_is_remote
 
+- name: Ensure PostgreSQL cluster is running
+  become: yes
+  service:
+    name: "postgresql@{{ postgresql_version }}-main"
+    state: started
+  when: not db_is_remote
+
 - name: Create PostgreSQL users
   become: yes
   become_user: "{{ db_is_remote and 'ansible' or 'postgres' }}"
-  vars:
-    ansible_ssh_pipelining: true
   postgresql_user:
     name: "{{ item.username }}"
     password: "{{ item.password }}"
-    role_attr_flags: "{{ item.role_attr_flags|default('CREATEDB') }}"
+    role_attr_flags: "{{ item.role_attr_flags | default('CREATEDB') }}"
     state: present
     port: "{{ postgresql_port }}"
     login_host: "{{ db_is_remote and postgresql_host or omit }}"
     login_user: "{{ db_is_remote and postgres_users.root.username or omit }}"
     login_password: "{{ db_is_remote and postgres_users.root.password or omit }}"
-    db: 'postgres'
-    encrypted: True
+    db: postgres
+    encrypted: true
+  loop: "{{ postgres_users.values() | list }}"
+  when:
+    - not is_pg_standby
+    - not ansible_check_mode
+  tags: [postgres_users]
+
+- name: Ensure PostgreSQL roles are visible
+  become: yes
+  become_user: "{{ db_is_remote and 'ansible' or 'postgres' }}"
+  postgresql_query:
+    db: postgres
+    query: "SELECT 1;"
+    port: "{{ postgresql_port }}"
+    login_host: "{{ db_is_remote and postgresql_host or omit }}"
+    login_user: "{{ db_is_remote and postgres_users.root.username or omit }}"
+    login_password: "{{ db_is_remote and postgres_users.root.password or omit }}"
   when: not is_pg_standby
-  with_items: "{{ postgres_users.values() | list }}"
-  tags:
-    - postgres_users
-  register: result
-  until: not result.failed or 'starting up' not in result.msg
-  retries: 5
-  delay: 20
+  tags: [postgres_users]
+
+- name: Wait for PostgreSQL Unix socket
+  wait_for:
+    path: /var/run/postgresql/.s.PGSQL.{{ postgresql_port }}
+    state: present
+    timeout: 30
+  when: not db_is_remote
+
+- name: Check PostgreSQL roles exist
+  become: yes
+  become_user: "{{ db_is_remote and 'ansible' or 'postgres' }}"
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: "SELECT 1 FROM pg_roles WHERE rolname = %s;"
+    positional_args:
+      - "{{ item.username }}"
+    login_unix_socket: /var/run/postgresql
+  loop: "{{ postgres_users.values() | list }}"
+  register: role_checks
+  when:
+    - not is_pg_standby
+    - not ansible_check_mode
+
+- name: Fail if PostgreSQL roles are missing
+  fail:
+    msg: >
+      Missing PostgreSQL roles:
+      {{
+        role_checks.results
+        | rejectattr('rowcount', '>', 0)
+        | map(attribute='item.username')
+        | list
+      }}
+  when:
+    - not is_pg_standby
+    - not ansible_check_mode
+    - role_checks.results
+      | rejectattr('rowcount', '>', 0)
+      | list
+      | length > 0
 
 - name: Add user privs
   become: yes
   become_user: "{{ db_is_remote and 'ansible' or 'postgres' }}"
-  vars:
-    ansible_ssh_pipelining: true
-  postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: postgres
     state: present
-    type: "{{ item.1.type|default(omit) }}"
-    privs: "{{ item.1.privs|default(omit) }}"
+    type: "{{ item.1.type | default(omit) }}"
+    privs: "{{ item.1.privs | default(omit) }}"
     objs: "{{ item.1.objs }}"
     roles: "{{ item.0.username }}"
     port: "{{ postgresql_port }}"
     login_host: "{{ db_is_remote and postgresql_host or omit }}"
     login_user: "{{ db_is_remote and postgres_users.root.username or omit }}"
     login_password: "{{ db_is_remote and postgres_users.root.password or omit }}"
-  when: not is_pg_standby
-  with_subelements:
-    - "{{ postgres_users.values() | list }}"
-    - privs
-    - flags:
-      skip_missing: True
-  tags:
-    - postgres_users
+  loop: "{{ (postgres_users.values() | list) | subelements('privs', skip_missing=True) }}"
+  when:
+    - not is_pg_standby
+    - not ansible_check_mode
+  tags: [postgres_users]
 
 - name: Create PostgreSQL databases
   become_user: "{{ db_is_remote and 'ansible' or 'postgres' }}"

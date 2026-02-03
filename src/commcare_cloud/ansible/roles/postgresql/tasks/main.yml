@@ -23,8 +23,15 @@
   tags: pghashlib
 
 - name: Download pghashlib
-  get_url: url=https://github.com/markokr/pghashlib/archive/master.zip dest=/tmp/pghashlib.zip
-  when: hashlib_stat.stat.exists == False
+  get_url:
+    url: https://github.com/markokr/pghashlib/archive/master.zip
+    dest: /tmp/pghashlib.zip
+  when: not hashlib_stat.stat.exists
+  environment:
+    http_proxy: ""
+    https_proxy: ""
+    HTTP_PROXY: ""
+    HTTPS_PROXY: ""
   tags: pghashlib
 
 - name: Unzip pghashlib
